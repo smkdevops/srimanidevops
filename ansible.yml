@@ -1,0 +1,49 @@
+Download the necessary binaries:
+Step 1: Login to https://edelivery.oracle.com website and add the Oracle JDK 1.8 Latest version, Oracle Fusion Middleware Infrastructure 12c, Oracle WebCenter Portal, Oracle WebCenter Content Software into the cart
+Step 2: Choose the Operating System (Linux x86-64)
+Step 3: Continue to download page after agreeing the T&C
+Step 4: In the Download Page use WGET Options link to download shell scripts to download the selected packages > Download wget.sh script by clicking Download.sh
+Step 5: Modify the downloaded wget.sh script to add username & password to the script file and download the packages without user interactions.
+
+Open the script and comment following line:
+#read SSO_USERNAME
+
+Add below line:
+SSO_USERNAME=subramanya.shettigar@legatohealth.com
+SSO_PASSWORD=<Your Password>
+
+Modify the below line to skip password prompt by replacing"--ask-password" with "--http-password "$SSO_PASSWORD"  "
+ Command before replacing: $WGET  --secure-protocol=auto --save-cookies="$COOKIE_FILE" --keep-session-cookies --http-user "$SSO_USERNAME" --ask-password  "https://edelivery.oracle.com/osdc/cliauth" -a "$LOGFILE"
+ Command after replacing: $WGET  --secure-protocol=auto --save-cookies="$COOKIE_FILE" --keep-session-cookies --http-user "$SSO_USERNAME" --http-password "$SSO_PASSWORD"  "https://edelivery.oracle.com/osdc/cliauth" -a "$LOGFILE"
+
+run ./wget.sh and wait until all packages download completed.
+
+UNZIP all the downloaded files:
+unzip -o "*.zip"
+
+
+Installing Java: Make sure above steps are properly completed. Replace the file name if different java version is chosen while downloading.
+cd /u01/downloads
+mkdir -p /u01/app/java
+tar -xvzf jdk-8u351-linux-x64.tar.gz -C /u01/app/java
+mv /u01/app/java/jdk1.8.0_351 /u01/app/java/JDK
+
+
+Create the Application installation directory, inventory directory & tmp directory:
+mkdir -p /u01/app/oracle/Middleware/12cOracle_Home
+mkdir -p /u01/app/oraInventory
+mkdir -p /u01/tmp
+
+cd /u01/downloads
+/u01/app/java/JDK/bin/java -Djava.io.tmpdir=/u01/tmp -jar fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /u01/downloads/installFMW.rsp -invPtrLoc /u01/downloads/oraInst.loc
+
+/u01/app/java/JDK/bin/java -Djava.io.tmpdir=/u01/tmp -jar fmw_12.2.1.4.0_wcportal.jar -silent -responseFile /u01/downloads/installWCP.rsp -invPtrLoc /u01/downloads/oraInst.loc
+
+/u01/app/java/JDK/bin/java -Djava.io.tmpdir=/u01/tmp -jar fmw_12.2.1.4.0_wccontent.jar -silent -responseFile /u01/downloads/installFMW.rsp -invPtrLoc /u01/downloads/oraInst.loc
+
+
+Creating Oracle fusion & webcenter repositories.
+This need DB team support as they need to enter the Sysdba User Password. 
+
+cd /u01/app/oracle/Middleware/12cR4_Oracle_Home/oracle_common/bin
+./rcu -silent -honorOMF -responseFile ./responsefile.properties < password.txt
