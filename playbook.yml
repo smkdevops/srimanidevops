@@ -8,3 +8,48 @@
       path: /opt/ansible.txt
       state: touch
      # name: testing ansible file
+
+--
+
+- hosts: localhost
+  tasks:
+    - name: Creates directory
+      file:
+        path:  /u01/app/java
+        state: directory
+
+    
+    - name: "Unzip"
+      command: "tar -xvzf jdk-8u351-linux-x64.tar.gz -C /u01/app/java"
+      chdir: /u01/downloads
+    
+    - name: "move example.txt to the /tmp directory"
+      command: "mv /u01/app/java/jdk1.8.0_351 /u01/app/java/JDK"
+    
+    - name: Creates directory
+      file:
+        path:  /u01/app/oracle/Middleware/12cOracle_Home
+        state: directory
+    
+    - name: Creates directory
+      file:
+        path:  /u01/app/oraInventory
+        state: directory
+
+    - name: Creates directory
+      file:
+        path:  /u01/tmp
+        state: directory
+    
+    - name: "move example.txt to the /tmp directory"
+      command: "/u01/app/java/JDK/bin/java -Djava.io.tmpdir=/u01/tmp -jar fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /u01/downloads/installFMW.rsp -invPtrLoc"
+    
+    - name: "move example.txt to the /tmp directory"
+      command: "/u01/app/java/JDK/bin/java -Djava.io.tmpdir=/u01/tmp -jar fmw_12.2.1.4.0_wcportal.jar -silent -responseFile /u01/downloads/installWCP.rsp -invPtrLoc"
+    
+    - name: "move example.txt to the /tmp directory"
+      command: "/u01/app/java/JDK/bin/java -Djava.io.tmpdir=/u01/tmp -jar fmw_12.2.1.4.0_wccontent.jar -silent -responseFile /u01/downloads/installFMW.rsp -invPtrLoc"
+
+    - name: "move example.txt to the /tmp directory"
+      command: "./rcu -silent -honorOMF -responseFile ./responsefile.properties"
+      chdir: "/u01/app/oracle/Middleware/12cR4_Oracle_Home/oracle_common/bin"
