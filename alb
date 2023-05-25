@@ -1,0 +1,84 @@
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  scheme = var.scheme
+  tags   = merge({ "scheme" = local.scheme }, var.tags)
+}
+
+resource "aws_lb" "alb" {
+  count                      = var.create_alb == true ? 1 : 0
+  name                       = var.load_balancer_name
+  internal                   = var.internal
+  load_balancer_type         = "application"
+  security_groups            = var.security_group_ids
+  subnets                    = var.subnet_ids
+  enable_http2               = "true"
+  idle_timeout               = var.idle_timeout
+  ip_address_type            = var.ip_address_type
+  enable_deletion_protection = var.enable_deletion_protection
+
+
+  access_logs {
+    bucket  = "aws-landing-zone-alb-accesslog-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+    prefix  = var.access_logs_prefix
+    enabled = "true"
+  }
+
+  tags = local.tags
+}
+
+resource "aws_lb_target_group" "alb_target_group" {
+  count                              = var.create_alb_target_group == true ? 1 : 0
+  name                               = var.target_group_name
+  port                               = lower(var.target_type) == "lambda" ? null : "443"
+  protocol                           = lower(var.target_type) == "lambda" ? null : "HTTPS"
+  vpc_id                             = lower(var.target_type) == "lambda" ? null : var.vpc_id
+  target_type                        = var.target_type
+  deregistration_delay               = var.deregistration_delay
+  lambda_multi_value_headers_enabled = lower(var.target_type) == "lambda" ? var.lambda_multi_value_headers_enabled : null
+  load_balancing_algorithm_type      = var.load_balancing_algorithm_type
+  protocol_version                   = lower(var.target_type) == "lambda" ? null : var.protocol_version
+  stickiness {
+    type            = "lb_cookie"
+    cookie_duration = var.cookie_duration
+    enabled         = var.stickiness_enable
+  }
+
+  health_check {
+    enabled             = "true"
+    port                = "443"
+    protocol            = lower(var.target_type) == "lambda" ? null : "HTTPS"
+    path                = var.health_check_path
+    timeout             = var.health_check_timeout
+    healthy_threshold   = var.health_check_healthy_threshold
+    unhealthy_threshold = var.health_check_unhealthy_threshold
+    interval            = var.health_check_interval
+    matcher             = var.health_check_matcher
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = var.tags
+}
+
+resource "aws_lb_listener" "alb-listener" {
+  count             = var.create_alb_listener == true ? 1 : 0
+  load_balancer_arn = var.create_alb == true ? join("", aws_lb.alb[*].arn) : var.load_balancer_arn
+
+  port            = "443"
+  protocol        = "HTTPS"
+  ssl_policy      = var.ssl_policy
+  certificate_arn = var.certificate_arn
+
+  default_action {
+    target_group_arn = var.create_alb_target_group == true ? join("", aws_lb_target_group.alb_target_group[*].arn) : var.target_group_arn
+    type             = var.type
+  }
+  tags = var.tags
+}
+
+
